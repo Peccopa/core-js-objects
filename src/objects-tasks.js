@@ -354,32 +354,67 @@ function group(array, keySelector, valueSelector) {
  */
 
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  order: 0,
+  selector: '',
+  selectorType: '',
+
+  createCssSelector(value, type, order, pseudo = '') {
+    const cssSelector = Object.assign(Object.create(cssSelectorBuilder), {
+      selectorType: type,
+      order,
+      selector: `${this.selector}${pseudo}${value}${
+        type !== 'attr' ? '' : ']'
+      }`,
+    });
+    if (this.order > cssSelector.order) {
+      throw new Error(
+        'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
+      );
+    } else if (
+      ['element', 'id', 'pseudoElement'].includes(cssSelector.selectorType) &&
+      this.order === cssSelector.order
+    ) {
+      throw new Error(
+        'Element, id and pseudo-element should not occur more then one time inside the selector'
+      );
+    }
+    return cssSelector;
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  element(value) {
+    return this.createCssSelector(value, 'element', 1);
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    return this.createCssSelector(value, 'id', 2, '#');
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    return this.createCssSelector(value, 'class', 3, '.');
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    return this.createCssSelector(value, 'attr', 4, '[');
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    return this.createCssSelector(value, 'pseudoClass', 5, ':');
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    return this.createCssSelector(value, 'pseudoElement', 6, '::');
+  },
+
+  combine(selector1, combinator, selector2) {
+    const cssSelector = Object.create(cssSelectorBuilder);
+    cssSelector.selector = `${selector1.selector} ${combinator} ${selector2.selector}`;
+    return cssSelector;
+  },
+
+  stringify() {
+    const str = this.selector;
+    this.selector = '';
+    return str;
   },
 };
 
